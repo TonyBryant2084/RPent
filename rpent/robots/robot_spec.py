@@ -1,34 +1,10 @@
-# Copyright 2026 The RPent Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""Static robot-extension descriptor.
-
-Lives in :mod:`rpent.robots` alongside
-:class:`~rpent.robots.prompt_bundle.PromptBundle` so robots
-and planners can both import it without pulling in
-:mod:`rpent.tools` or the RPC transport layer. Tool schemas,
-handlers, server lifecycle, and the MCP allowlist live on
-:class:`rpent.tools.toolkit.Toolkit` and its robot subclasses —
-``RobotSpec`` carries the robot identity, the prompt bundle, and runner hooks
-that keep CLI orchestration independent of concrete robot implementations.
-"""
+# robot_spec.py：定义机器人或仿真环境接入 RPent 的统一描述结构，包括配置信息和初始化等函数接口
 
 from __future__ import annotations
 
 import argparse
 from collections.abc import Callable
-from dataclasses import dataclass
+
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -40,16 +16,17 @@ from rpent.robots.prompt_bundle import PromptBundle
 if TYPE_CHECKING:
     from rpent.utils.daemon import ProcessDaemon
 
+from dataclasses import dataclass
 
-@dataclass(frozen=True)
+@dataclass(frozen=True) # dataclass: 自动生成初始化等方法, frozen=True: 实例创建后,不允许直接给字段重新赋值
+# 任务配置清单
 class RunConfig:
-    """Derived per-run identifiers produced by :attr:`RobotSpec.parse_config`."""
 
-    recipe_tag: str
-    output_dir: Path
-    prompt_vars: dict[str, Any]
-    task_desc: dict[str, Any]
-    enable_direct_action: bool = False
+    recipe_tag: str # 任务配置标签(LIBERO为例: 任务套件(一组相关的机器人任务) + 任务编号(这组任务中的具体任务) + 随机种子(保证实验可重复))
+    output_dir: Path # 用来保存本次运行结果的目录路径
+    prompt_vars: dict[str, Any] # 构建提示词所需要的变量
+    task_desc: dict[str, Any] # 用一个字典保存本次任务的描述信息，方便记录和评测
+    enable_direct_action: bool = False # 是否允许规划模型直接填写底层动作数值，并调用工具执行
 
 
 @dataclass(frozen=True)
