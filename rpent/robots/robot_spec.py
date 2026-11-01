@@ -11,12 +11,16 @@ from typing import TYPE_CHECKING, Any
 from rpent.dashboard.events import DashboardEventSink
 from rpent.dashboard.spec import DashboardSpec
 from rpent.evaluation import RunFinalizer
-from rpent.robots.prompt_bundle import PromptBundle
+
 
 if TYPE_CHECKING:
     from rpent.utils.daemon import ProcessDaemon
 
+# 导入数据类装饰器，用于自动生成初始化、对象表示、相等比较等方法。
 from dataclasses import dataclass
+
+
+from rpent.robots.prompt_bundle import PromptBundle
 
 @dataclass(frozen=True) # dataclass: 自动生成初始化等方法, frozen=True: 实例创建后,不允许直接给字段重新赋值
 # 任务配置清单
@@ -29,13 +33,13 @@ class RunConfig:
     enable_direct_action: bool = False # 是否允许规划模型直接填写底层动作数值，并调用工具执行
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True) # dataclass: 自动生成初始化等方法, frozen=True: 实例创建后,不允许直接给字段重新赋值
+# 机器人接入 RPent 的配置表
 class RobotSpec:
-    """Robot-level (non-tool) extension points for RPent."""
 
-    name: str
-    prompts: PromptBundle
-    add_cli_args: Callable[[argparse.ArgumentParser, bool], None]
+    name: str # 机器人名称
+    prompts: PromptBundle # 该机器人使用的提示词集和
+    add_cli_args: Callable[[argparse.ArgumentParser, bool], None] #
     parse_config: Callable[[argparse.Namespace], RunConfig]
     init_runtime: Callable[
         [argparse.Namespace, Path, DashboardEventSink, set[str] | None],

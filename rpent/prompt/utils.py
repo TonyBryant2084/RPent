@@ -1,19 +1,3 @@
-# Copyright 2026 The RPent Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""Python prompt rendering primitives."""
-
 from __future__ import annotations
 
 import textwrap
@@ -24,28 +8,43 @@ from typing import Any
 from rpent.utils.templates import substitute_text
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True) # dataclass: 自动生成初始化等方法, frozen=True: 实例创建后,不允许直接给字段重新赋值
 class BulletList:
-    """Render items as Markdown bullets."""
+    """项目符号列表节点，供格式化函数识别并渲染为 Markdown 无序列表。"""
 
+    # 保存各项提示词内容：元组长度不限，每个元素的类型不限。
     items: tuple[Any, ...]
 
-    def __init__(self, items: Sequence[Any]):
-        """Create a bullet list from prompt nodes."""
+    def __init__(
+        self,
+        items: Sequence[Any],  # 接收有序序列，如列表、元组；元素类型和数量不限。
+    ):
+        # 将传入的序列转换为元组，并保存到当前对象的 items 属性。
+        # 使用 object.__setattr__ 绕过 frozen=True 的普通赋值限制，完成初始化。
         object.__setattr__(self, "items", tuple(items))
 
 
 @dataclass(frozen=True)
 class Numbered:
-    """Render items as a numbered Markdown list."""
+    """编号列表节点，供格式化函数识别并渲染为 Markdown 有序列表。"""
 
+    # 保存各项提示词内容：元组长度不限，每个元素的类型不限。
     items: tuple[Any, ...]
 
     def __init__(self, items: Sequence[Any]):
-        """Create a numbered list from prompt nodes."""
+        # 与 BulletList 使用相同的存储方式，将输入转换为元组并保存。
+        # 两者的对象类型不同，供格式化函数区分无序列表和有序列表。
         object.__setattr__(self, "items", tuple(items))
 
 
+# 提示词节点的类型别名，| 表示“或者”，允许以下任意一种类型：
+# 1. str：字符串。
+# 2. Mapping[str, Any]：键为字符串、值类型不限的映射，例如 dict。
+#    Mapping 是抽象基类，不要求映射可以修改。
+# 3. Sequence[Any]：元素类型和数量不限、支持按位置索引的有序序列。
+#    Sequence 是抽象基类，例如 list、tuple、str。
+# 4. BulletList：项目符号列表节点，items 属性以元组保存各项内容。
+# 5. Numbered：编号列表节点，items 属性以元组保存各项内容。
 PromptNode = str | Mapping[str, Any] | Sequence[Any] | BulletList | Numbered
 
 
