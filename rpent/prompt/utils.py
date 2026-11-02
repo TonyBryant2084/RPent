@@ -37,7 +37,7 @@ class Numbered:
         object.__setattr__(self, "items", tuple(items))
 
 
-# 提示词节点的类型别名，| 表示“或者”，允许以下任意一种类型：
+# 提示词节点类型
 # 1. str：字符串。
 # 2. Mapping[str, Any]：键为字符串、值类型不限的映射，例如 dict。
 #    Mapping 是抽象基类，不要求映射可以修改。
@@ -47,20 +47,32 @@ class Numbered:
 # 5. Numbered：编号列表节点，items 属性以元组保存各项内容。
 PromptNode = str | Mapping[str, Any] | Sequence[Any] | BulletList | Numbered
 
-
+# 格式化提示词节点为最终的提示词字符串
 def format_prompt(
-    prompt: PromptNode,
+    prompt: PromptNode, # 待格式化的提示词节点
     *,
-    variables: Mapping[str, object] | None = None,
+    variables: Mapping[str, object] | None = None, # 提示词变量映射, 可省略
 ) -> str:
-    """Render a Python prompt tree into final prompt text."""
+
+    # 1. (variables or {})：如果 variables 为 None，则使用空字典 {}
+    # 2. .items()：返回字典的键值对迭代器
+    # 3. 任意 object 对象都可以通过 str() 转换为字符串
     vars_ = {k: str(v) for k, v in (variables or {}).items()}
+
+
     return _render(prompt, vars_, depth=0).strip() + "\n"
 
 
-def _render(value: Any, variables: Mapping[str, str], *, depth: int) -> str:
-    if value is None:
+def _render(
+    value: Any, # 待格式化的提示词节点的值，类型不限
+    variables: Mapping[str, str], # 提示词变量映射，键值对均为字符串
+    *, # 后面的参数必须通过关键字传参
+    depth: int # 当前提示词节点的深度，用于渲染标题和列表时的缩进和层级
+) -> str:
+    
+    if value is None: # 如果提示词节点的值为 None，则返回空字符串
         return ""
+    # isinstance(value, class): 检查 value 是否为 class 的实例, 若是, 返回 True, 否则返回 False
     if isinstance(value, str):
         return substitute_text(_clean_text(value), variables, strict=True)
     if isinstance(value, BulletList):
@@ -147,5 +159,44 @@ def _render_list(
     return separator.join(blocks)
 
 
+# 1. dedent()：删除多行字符串中所有非空行共有的开头缩进
+#
+# 原始字符串：
+# text = """
+#   You are a robot planner.
+#     1. Observe the environment.
+#     2. Pick up the cup.
+# """
+#
+# 实际字符串：
+# text = "\n  You are a robot planner.\n    1. Observe the environment.\n    2. Pick up the cup.\n"
+#
+# 第一行：2 个空格
+# 第二行：4 个空格
+# 第三行：4 个空格
+# 公共缩进：min(2, 4, 4) = 2
+#
+# 执行 textwrap.dedent(text)：
+# "\nYou are a robot planner.\n  1. Observe the environment.\n  2. Pick up the cup.\n"
+#
+# 说明：每个非空行删除 2 个空格，保留各行之间的相对缩进。
+# 注意：min() 适用于本例中仅使用空格缩进的情况。
+
+
+# 2. strip()：删除整个字符串首尾的空白字符
+# 包括空格、制表符 \t、换行符 \n 等，不删除字符串中间的空白。
+#
+# 执行 textwrap.dedent(text).strip()：
+# "You are a robot planner.\n  1. Observe the environment.\n  2. Pick up the cup."
+#
+# 说明：删除字符串开头和结尾的 \n，保留中间的换行与缩进。
+
+
+# 3. _clean_text()：组合 dedent() 和 strip()
+# 作用：清理 RPent 中的多行 Prompt，删除公共缩进和首尾空白。
+#
+# dedent()：删除公共缩进
+# strip()：删除字符串首尾空白
+# 返回值：清理后的 str，不修改原始字符串
 def _clean_text(text: str) -> str:
     return textwrap.dedent(text).strip()
